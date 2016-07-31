@@ -10,6 +10,11 @@ var pictionary = function() {
             6, 0, 2 * Math.PI);
         context.fill();
     };
+    var drawBox;
+    var drawWord = $('#draw-word');
+    var drawingWord = function(randomWord) {
+        drawWord.html('Draw this word: ' + randomWord);
+    };
 
     var guessBox;
     var userGuess = $('#user-guess');
@@ -32,23 +37,32 @@ var pictionary = function() {
     context = canvas[0].getContext('2d');
     canvas[0].width = canvas[0].offsetWidth;
     canvas[0].height = canvas[0].offsetHeight;
-    canvas.on('mousemove', function(event) {
-        if (drawing === true) {
-            var offset = canvas.offset();
-            var position = {
-                x: event.pageX - offset.left,
-                y: event.pageY - offset.top
-            };
-            draw(position);
-            socket.emit('draw', position);
+    socket.on('userCanDraw', function(data) {
+        console.log(data.drawerId + ' can draw!');
+        console.log(data.id + ' client id');
+        if (data.drawerId == data.id) {
+            drawingWord(data.word);
+            canvas.on('mousemove', function(event) {
+                if (drawing === true) {
+                    var offset = canvas.offset();
+                    var position = {
+                        x: event.pageX - offset.left,
+                        y: event.pageY - offset.top
+                    };
+                    draw(position);
+                    socket.emit('draw', position);
+                }
+            });
+            canvas.on('mousedown', function(event) {
+                drawing = true;
+            });
+            canvas.on('mouseup', function(event) {
+                drawing = false;
+                return;
+            });
+        } else {
+            alert("You can only guess!");
         }
-    });
-    canvas.on('mousedown', function(event) {
-        drawing = true;
-    });
-    canvas.on('mouseup', function(event) {
-        drawing = false;
-        return;
     });
     socket.on('draw', draw);
     socket.on('keydown', userGuessing);
