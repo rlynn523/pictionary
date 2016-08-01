@@ -25,9 +25,14 @@ var pictionary = function() {
         if (event.keyCode != 13) {
             return;
         }
+        var win = "You Win!";
         var guess = (guessBox.val());
-        userGuessing(guess);
-        socket.emit('keydown', guess);
+        var guessData = {
+            guess: guess,
+            win: win
+        };
+        userGuessing(guessData);
+        socket.emit('keydown', guessData);
         guessBox.val('');
     };
     guessBox = $('#guess input');
@@ -37,29 +42,28 @@ var pictionary = function() {
     context = canvas[0].getContext('2d');
     canvas[0].width = canvas[0].offsetWidth;
     canvas[0].height = canvas[0].offsetHeight;
+    canvas.on('mousemove', function(event) {
+        if (drawing === true) {
+            var offset = canvas.offset();
+            var position = {
+                x: event.pageX - offset.left,
+                y: event.pageY - offset.top
+            };
+            draw(position);
+            socket.emit('draw', position);
+        }
+    });
+    canvas.on('mousedown', function(event) {
+        socket.emit('canDraw');
+    });
+    canvas.on('mouseup', function(event) {
+        drawing = false;
+        return;
+    });
     socket.on('userCanDraw', function(data) {
-        console.log(data.drawerId + ' can draw!');
-        console.log(data.id + ' client id');
         if (data.drawerId == data.id) {
+            drawing = data.drawing;
             drawingWord(data.word);
-            canvas.on('mousemove', function(event) {
-                if (drawing === true) {
-                    var offset = canvas.offset();
-                    var position = {
-                        x: event.pageX - offset.left,
-                        y: event.pageY - offset.top
-                    };
-                    draw(position);
-                    socket.emit('draw', position);
-                }
-            });
-            canvas.on('mousedown', function(event) {
-                drawing = true;
-            });
-            canvas.on('mouseup', function(event) {
-                drawing = false;
-                return;
-            });
         } else {
             alert("You can only guess!");
         }
